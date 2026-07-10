@@ -11,7 +11,8 @@ app.get('/home',(req, res) => {
 app.get('/contact',(req,res)=>{
     const m = {'title':"Contact Info", 
         'content':"Contact me at anfatima.bscs24seecs@seecs.edu.pk"
-    }
+    }; 
+    res.send(m);
 }) 
 
 app.listen(port,()=>{
