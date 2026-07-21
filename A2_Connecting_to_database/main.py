@@ -1,10 +1,41 @@
 
-import sqlite3  
-def printData(tablename):
+import sqlite3   
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse 
+app = FastAPI()
+def returnData(tablename): 
+    connection = sqlite3.connect("tasks.db") 
+    cursor = connection.cursor() 
     cursor.execute(f"select * from {tablename}") 
     data = cursor.fetchall() 
+    datalist=[]
     for d in data: 
-        print(d)
+        datalist.append({
+            "id": d[0],
+            "title": d[1],
+            "done": bool(d[2])
+        }) 
+    return datalist 
+def returnDetailsOfId(tablename,id):
+    connection = sqlite3.connect("tasks.db") 
+    cursor = connection.cursor() 
+    cursor.execute(
+        f"""
+            select * from {tablename} 
+            where id = ? 
+        """   ,(id,)
+    )  
+    result = cursor.fetchone() 
+    if not result: 
+        content = {"error": "task not found"}
+        return JSONResponse(content=content, status_code=401)
+    result = {
+        "id":result[0], 
+        "title":result[1],
+        "done":bool(result[2])
+    }
+    return result
+    
 connection = sqlite3.connect("tasks.db") 
 cursor = connection.cursor() 
 
@@ -35,6 +66,15 @@ if not hasdata:
     print("data added")
 else: 
     print("Data already exists so no starter-data added")  
-print("Write now the data in the db is: ")
-printData("tasks") 
+
+@app.get("/tasks") 
+def getTasks():
+    return{
+        "title":"All tasks", 
+        "individual tasks":returnData("tasks")
+    } 
+@app.get("/tasks/{id}") 
+def getTaskById(id:int): 
+    return returnDetailsOfId("tasks",id)
     
+
