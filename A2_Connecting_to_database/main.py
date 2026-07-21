@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel  
 class Task(BaseModel): 
     title : str
-    done : bool
+    done : bool 
+
     
 app = FastAPI() 
 
@@ -102,8 +103,39 @@ def addTask(task : Task):
     connection.commit()
     return {
         "message":"Task added successfully"
-    }
-    
+    } 
+# update completion status 
+@app.put("/toggleStatus/{id}") 
+def toggleStatus(id:int): 
+    connection = sqlite3.connect('tasks.db') 
+    cursor = connection.cursor() 
+    cursor.execute(
+        f""" 
+            update tasks 
+            set done = not done 
+            where id = ?
+        """,(id,)
+    )  
+    connection.commit()
+    return {
+        "message":"Status toggled!"
+    } 
+
+# deleting a task 
+@app.delete("/deleteTask/{id}") 
+def delTask(id:int): 
+    connection = sqlite3.connect() 
+    cursor = connection.cursor()  
+    cursor.execute(
+        f"""
+            delete from tasks 
+            where id = {id}
+        """    
+    )
+    connection.commit() 
+    return {
+        "message" : "task deleted"
+    } 
     
 
     
