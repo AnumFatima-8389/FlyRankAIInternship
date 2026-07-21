@@ -26,3 +26,4 @@ The database file is stored in the folder itself. When you run the project for t
 ### Database after manual deletion in last stage: 
 <img src = "screenshots/DBAfterManualDeletion.jpg">  
 
+That's all! 
