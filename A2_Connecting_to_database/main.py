@@ -36,7 +36,7 @@ def returnDetailsOfId(tablename,id):
     result = cursor.fetchone() 
     if not result: 
         content = {"error": "task not found"}
-        return JSONResponse(content=content, status_code=401)
+        return JSONResponse(content=content, status_code=404)
     result = {
         "id":result[0], 
         "title":result[1],
