@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from dotenv import load_dotenv
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -38,6 +38,7 @@ def signup(credentials:Credentials):
         status_code=201, 
         content=jsonable_encoder({"user":res.user.model_dump()})
     )  
+
 @app.post("/auth/login") 
 def login(credentials:Credentials): 
     if not credentials.email or not credentials.password: 
@@ -63,4 +64,35 @@ def login(credentials:Credentials):
             status_code = 401, 
             content = { "error": "Invalid login credentials" }
         )
+
+@app.get("/public/info") 
+def publicInfo(): 
+    return {
+        'message':'Welcome stranger! This info is public.'
+    } 
+    
+@app.get("/protected/profile") 
+def profile(authorization:str = Header(None)): 
+    if authorization is None: 
+        return JSONResponse(
+            status_code = 401, 
+            content = {
+                'error':'Access token required'
+            }
+        ) 
+    scheme,token = authorization.split() 
+    if scheme != "Bearer": 
+        return JSONResponse(
+            status_code=401,
+            content={'error':'Invalid authorization scheme'}
+        )
+    return {
+        JSONResponse(
+            status_code = 200, 
+            content = {
+                'message':'protected route'
+            }
+        )
+    }
         
+    
