@@ -85,12 +85,21 @@ def profile(authorization:str = Header(None)):
         return JSONResponse(
             status_code=401,
             content={'error':'Invalid authorization scheme'}
-        )
+        ) 
+    our_user = supabase.auth.get_user(token)  
+    if our_user is None: 
+        return JSONResponse(
+            status_code = 401, 
+            content = {'error':'Invalid or expired token'}
+        ) 
+    user = our_user.user
     return {
         JSONResponse(
             status_code = 200, 
-            content = {
-                'message':'protected route'
+             content = {
+                'id':user.id, 
+                'email':user.email,
+                'created at':jsonable_encoder(user.created_at)
             }
         )
     }
