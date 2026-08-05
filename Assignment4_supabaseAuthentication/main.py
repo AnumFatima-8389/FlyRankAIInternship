@@ -6,6 +6,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from supabase import AuthError, create_client 
 from pydantic import BaseModel 
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
 
 class Credentials(BaseModel): 
     email:str 
@@ -70,35 +73,12 @@ def publicInfo():
     return {
         'message':'Welcome stranger! This info is public.'
     } 
-def verify_token(authorization:str = Header(None)): 
-    if authorization is None: 
-        raise HTTPException(
-            status_code = 401, 
-            detail = 'Access token required'
-        ) 
-    parts = authorization.split() 
-    if len(parts)!=2:
-        raise HTTPException(
-            status_code = 401, 
-            detail = 'Incorrect authorization header format'
-        )
-    scheme,token = parts
-    if scheme != "Bearer": 
-        raise HTTPException(
-            status_code=401,
-            detail = 'Invalid authorization scheme'
-        ) 
-    try:
-        our_user = supabase.auth.get_user(token) 
-    except AuthError: 
-        if our_user is None: 
-            raise HTTPException(
-                status_code = 401, 
-                detail = 'Invalid or expired token'
-            ) 
-    user = our_user.user 
+def verify_token(credentials:HTTPAuthorizationCredentials=Depends(security)): 
+    token = credentials.credentials 
+    user = supabase.auth.get_user(token)
+    
     return {
-        'user':user, 
+        'user':user.user, 
         'token':token
     }
     
