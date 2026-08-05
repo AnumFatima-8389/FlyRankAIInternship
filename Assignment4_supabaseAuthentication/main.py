@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 import os
-from fastapi import FastAPI, Header
+from fastapi import Depends, FastAPI, HTTPException, Header
 from dotenv import load_dotenv
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -70,31 +70,42 @@ def publicInfo():
     return {
         'message':'Welcome stranger! This info is public.'
     } 
+def verify_token(authorization:str = Header(None)): 
+    if authorization is None: 
+        raise HTTPException(
+            status_code = 401, 
+            detail = 'Access token required'
+        ) 
+    parts = authorization.split() 
+    if len(parts)!=2:
+        raise HTTPException(
+            status_code = 401, 
+            detail = 'Incorrect authorization header format'
+        )
+    scheme,token = parts
+    if scheme != "Bearer": 
+        raise HTTPException(
+            status_code=401,
+            detail = 'Invalid authorization scheme'
+        ) 
+    try:
+        our_user = supabase.auth.get_user(token) 
+    except AuthError: 
+        if our_user is None: 
+            raise HTTPException(
+                status_code = 401, 
+                detail = 'Invalid or expired token'
+            ) 
+    user = our_user.user 
+    return {
+        'user':user, 
+        'token':token
+    }
     
 @app.get("/protected/profile") 
-def profile(authorization:str = Header(None)): 
-    if authorization is None: 
-        return JSONResponse(
-            status_code = 401, 
-            content = {
-                'error':'Access token required'
-            }
-        ) 
-    scheme,token = authorization.split() 
-    if scheme != "Bearer": 
-        return JSONResponse(
-            status_code=401,
-            content={'error':'Invalid authorization scheme'}
-        ) 
-    our_user = supabase.auth.get_user(token)  
-    if our_user is None: 
-        return JSONResponse(
-            status_code = 401, 
-            content = {'error':'Invalid or expired token'}
-        ) 
-    user = our_user.user
-    return {
-        JSONResponse(
+def profile(userDetails = Depends(verify_token)): 
+    user = userDetails["user"]
+    return JSONResponse(
             status_code = 200, 
              content = {
                 'id':user.id, 
@@ -102,6 +113,22 @@ def profile(authorization:str = Header(None)):
                 'created at':jsonable_encoder(user.created_at)
             }
         )
-    }
-        
+    
+
+@app.post('/auth/logout') 
+def logout(userDetails = Depends(verify_token)):
+    supabase.auth.sign_out(userDetails["token"]) 
+    return JSONResponse(
+        status_code = 204, 
+    ) 
+    
+@app.get('/protected/dashboard') 
+def dashboard(user_details = Depends(verify_token)):
+    return JSONResponse(
+        status_code = 200, 
+        content = {'message':'token verified'}
+    )
+    
+    
+    
     
